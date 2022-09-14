@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package MPSaas.AccountServer;
+option go_package = "github.com/group/resp/protocols/protogen/go/account-server;AccountServer";
+service AccountService{
+    // 根据biz_userid检验用户是否存在于卫星城账号体系中，若不存在，则前往公共组去拉取该用户信息，并保存至卫星城
+    rpc CheckUserInfo(CheckUserInfoReq) returns (CheckUserInfoResp){}
+    // 根据biz_userid查询头像、昵称
+    rpc QueryUserBaseInfo(QueryUserBaseInfoReq) returns (UserInfo){}
+    //  用户更新微信的头像和昵称，卫星城也要相对应的更新
+    rpc UpdateUserBaseInfo(UpdateUserBaseInfoReq) returns (UpdateUserBaseInfoResp){}
+    // 保存用户手机号码
+    rpc UpdateUserPhoneInfo(UpdateUserPhoneInfoReq) returns(UpdateUserPhoneInfoResp){}
+    //  功能开关接口
+    rpc QueryCommandStatusInfo(QueryCommandStatusInfoReq) returns(QueryCommandStatusInfoResp){}
+    //  口令校验接口
+    rpc QueryCommandKeyInfo(QueryCommandKeyInfoReq)returns(QueryCommandKeyInfoResp){}
+    //  获取企微用户的登录态Token（for 外部WeCom用户, by 白名单）
+    rpc QueryOuterWeComUserToken(QueryOuterWeComUserTokenReq)returns(QueryOuterWeComUserTokenResp){}
+}
+
+message QueryCommandKeyInfoReq{
+    string commandKey = 1; // 内部口令
+}
+
+message QueryCommandKeyInfoResp{
+    int64 validateTime = 1;//有效截止时间戳
+}
+
+message QueryCommandStatusInfoReq{
+}
+
+message QueryCommandStatusInfoResp{
+    bool isSwitch = 1; //功能开关状态
+}
+
+message UpdateUserPhoneInfoReq{
+    string codePhone = 1;       //微信加密以后的手机号码，该字段适用于2021年7月以后的微信版本
+    string encryptedData = 2 ; //包括敏感数据在内的完整用户信息的加密数据，以下四个字段适用于2021年7月之前的微信版本
+    string iv = 3;             //加密算法的初始向量
+    string token = 4;          //登录时用户token
+    string appid = 5;          //小程序appid
+}
+
+message UpdateUserPhoneInfoResp{
+}
+
+message CheckUserInfoReq{
+}
+message CheckUserInfoResp{
+}
+
+message QueryUserBaseInfoReq{
+}
+
+message UpdateUserBaseInfoReq{
+    UserInfo userInfo = 1;               //用户信息
+}
+message UserInfo{
+    string nickName = 1;                   //用户昵称
+    string avatarUrl = 2;                 //用户头像图片
+    int32  gender = 3;                    //用户性别,0：未知，1：男性，2：女性
+    string country = 4;                   //用户所在国家
+    string province = 5;                  //用户所在省份
+    string city = 6;                      //用户所在城市
+    string phone = 7 ;                    //手机号码
+}
+message UpdateUserBaseInfoResp{
+}
+
+// 参考：LoginWithThirdPartyReq in https://git.woa.com/MedicalCommon/goproto/blob/master/MediAccount/AccountToken.proto
+message QueryOuterWeComUserTokenReq{
+    string id = 1;      // 手机号码/第三方ID
+    string corpId = 2;  // CorpID是企业号的标识，每个企业号拥有一个唯一的CorpID
+    int32 platform = 3; // 若为空使用header-bin中的platform, 1: H5 2: APP ios
+    // 5:QQ小程序 6:App andriod 7:App Hermos 8:微信小程序 9
+    // PC端: SaaS | 直播管理使用 10: vivo 快应用 11:oppo
+    // 快应用 12:华为 快应用
+}
+
+// 参考：LoginWithThirdPartyResp in https://git.woa.com/MedicalCommon/goproto/blob/master/MediAccount/AccountToken.proto
+message QueryOuterWeComUserTokenResp{
+    string token = 1;      // 登录成功后的token
+    uint32 expiration = 2; // token有效时间，单位秒
+    int64 uin = 3;         // 登录后的用户ID
+    int32 errCode = 100;  // 错误码，0表示正确
+    string errMsg = 101;  // 错误信息
+}

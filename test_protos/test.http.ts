@@ -1,0 +1,16 @@
+import {
+  UserInfo,
+  UpdateUserPhoneInfoReq,
+  QueryCommandStatusInfoResp,
+  QueryCommandKeyInfoReq,
+  QueryOuterWeComUserTokenResp,
+  QueryUserBaseInfoReq,
+  UpdateUserBaseInfoReq,
+  QueryCommandKeyInfoResp,
+  QueryOuterWeComUserTokenReq,
+  QueryCommandStatusInfoReq,
+  CheckUserInfoReq,
+  CheckUserInfoResp,
+  UpdateUserBaseInfoResp,
+  UpdateUserPhoneInfoResp,
+}from "./test.ts"

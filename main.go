@@ -2,15 +2,11 @@ package main
 
 import (
 	"flag"
-	//"fmt"
-	mapset "github.com/deckarep/golang-set/v2"
-	//"fmt"
-	//"github.com/ditashi/jsbeautifier-go/jsbeautifier"
 	"strings"
 
+	mapset "github.com/deckarep/golang-set/v2"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	//"strings"
 )
 
 //import vector "container/vector"

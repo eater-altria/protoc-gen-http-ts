@@ -3,6 +3,8 @@ syntax = "proto3";
 package PackageName;
 option go_package = "github.com/group/resp/TestService";
 
+import "sub_dir/user.proto";
+
 
 
 message SearchRequest {
@@ -25,4 +27,5 @@ message SearchResponse {
 
 service SearchService{
     rpc SearchByKeyword(SearchRequest) returns (SearchResponse){}
+    rpc GetUserInfo(GetUserInfoReq) returns (GetUserInfoResp) {}
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"strings"
 
 	"google.golang.org/protobuf/compiler/protogen"
@@ -31,7 +30,6 @@ func main() {
 	var g = ProtoMessage{}
 
 	var flags flag.FlagSet
-	fmt.Println("xxx")
 
 	flags.StringVar(&g.Prefix, "prefix", "/", "API path prefix")
 

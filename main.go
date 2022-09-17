@@ -115,21 +115,21 @@ func (protoMessage *ProtoMessage) GenerateImportSourceCodeV2(
 			}
 		}
 		var relativePath = getRelativePath(sourcePath, path)
-		t.P("}from \"" + strings.Replace(relativePath, ".proto", "", 1) + "\"")
+		t.P("}from '" + strings.Replace(relativePath, ".proto", "", 1) + "'")
 	}
 	t.P("")
 }
 func (protoMessage *ProtoMessage) GenerateGeneralServiceClass(
 	t *protogen.GeneratedFile,
 ) {
-	t.P("export type GeneralRequest = <TReq, TResp>(TReq, cmd: string, options?: any) => Promise<TResp>")
+	t.P("export type GeneralRequest = <TReq, TResp>(TReq, cmd: string, options?: any) => Promise<TResp>;")
 	t.P("")
 	t.P("export class GeneralClass {")
 	t.P("  GeneralRequestMethod: GeneralRequest;")
 	t.P("  constructor(GeneralRequestMethod: GeneralRequest) {")
 	t.P("    this.GeneralRequestMethod = GeneralRequestMethod;")
-	t.P("  }")
-	t.P("}")
+	t.P("  };")
+	t.P("};")
 	t.P("")
 }
 
@@ -140,23 +140,23 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 ) {
 	t.P("export class " + serviceName + " extends GeneralClass {")
 	t.P("  constructor(GeneralRequestMethod: GeneralRequest) {")
-	t.P("    super(GeneralRequestMethod)")
-	t.P("  }")
+	t.P("    super(GeneralRequestMethod);")
+	t.P("  };")
 	for _, method := range methods {
 		var name = method.Desc.Name()
 		var input = method.Input.Desc.Name()
 		var output = method.Output.Desc.Name()
 		t.P("  " + name + "(payload: " + input + ", options?: any): Promise<" + output + "> {")
 		t.P("    return new Promise((resolve, reject) => {")
-		t.P("      this.GeneralRequestMethod<" + input + "," + output + ">(payload, '" + name + "', options).then(res => {")
-		t.P("        resolve(res)")
+		t.P("      this.GeneralRequestMethod<" + input + ", " + output + ">(payload, '" + name + "', options).then(res => {")
+		t.P("        resolve(res);")
 		t.P("      }).catch(error => {")
-		t.P("        reject(error)")
-		t.P("      })")
-		t.P("    })")
-		t.P("  }")
+		t.P("        reject(error);")
+		t.P("      });")
+		t.P("    });")
+		t.P("  };")
 	}
-	t.P("}")
+	t.P("};")
 	t.P("")
 }
 

@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"strings"
 
-	mapset "github.com/deckarep/golang-set/v2"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -22,10 +22,16 @@ type ProtoService struct {
 	methods     []*protogen.Method
 }
 
+type ImportedFile struct {
+	path protoreflect.SourcePath
+	name []protoreflect.Name
+}
+
 func main() {
 	var g = ProtoMessage{}
 
 	var flags flag.FlagSet
+	fmt.Println("xxx")
 
 	flags.StringVar(&g.Prefix, "prefix", "/", "API path prefix")
 
@@ -48,9 +54,8 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 		return nil
 	}
 
-	// find all rpc methods‘s input and output type interface
-	var needImportInterfacesMap = mapset.NewSet[string]()
-	var needImportInterfaces = make([]string, 20)
+	var importInfo map[string][]string
+	importInfo = make(map[string][]string)
 
 	// fileName is just like ./test_protos/test. Remove prefix of .proto
 	var fileName = strings.Replace(protoFile.Desc.Path(), ".proto", "", 1)
@@ -67,16 +72,25 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 		var methods = service.Methods
 		for _, method := range methods {
 			protoService.methods = append(protoService.methods, method)
-			needImportInterfacesMap.Add(string(method.Input.Desc.Name()))
-			needImportInterfacesMap.Add(string(method.Output.Desc.Name()))
+			var inputImportPath = string(method.Input.Location.SourceFile)
+			var input = string(method.Input.Desc.Name())
+			var inputInterfaces = importInfo[inputImportPath]
+			if !IsContainInt(inputInterfaces, input) {
+				inputInterfaces = append(inputInterfaces, input)
+			}
+			importInfo[inputImportPath] = inputInterfaces
+			var outputImportPath = string(method.Output.Location.SourceFile)
+			var output = string(method.Output.Desc.Name())
+			var outputInterfaes = importInfo[outputImportPath]
+			if !IsContainInt(outputInterfaes, output) {
+				outputInterfaes = append(outputInterfaes, output)
+			}
+			importInfo[outputImportPath] = outputInterfaes
+
 		}
 		services = append(services, protoService)
 	}
-	needImportInterfacesMap.Each(func(a string) bool {
-		needImportInterfaces = append(needImportInterfaces, string(a))
-		return false
-	})
-	protoMessage.GenerateImportSourceCode(needImportInterfaces, fileName, t)
+	protoMessage.GenerateImportSourceCodeV2(importInfo, fileName, t)
 	protoMessage.GenerateGeneralServiceClass(t)
 	for _, service := range services {
 		if len(service.serviceName) > 0 {
@@ -86,21 +100,25 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 	return nil
 }
 
-func (protoMessage *ProtoMessage) GenerateImportSourceCode(
-	needImportInterfaces []string,
-	fileName string,
+func (protoMessage *ProtoMessage) GenerateImportSourceCodeV2(
+	needImportInterfaces map[string][]string,
+	sourcePath string,
 	t *protogen.GeneratedFile,
 ) {
-	t.P("import {")
-	for _, interfaceName := range needImportInterfaces {
-		if len(interfaceName) > 0 {
-			t.P("  " + interfaceName + ",")
+	for path, interfaces := range needImportInterfaces {
+		// t.P("----path----")
+		// t.P(path)
+		// t.P("----interfaces----")
+		// t.P(interfaces)
+		t.P("import {")
+		for _, interfae := range interfaces {
+			if len(interfae) > 0 {
+				t.P("  " + interfae + ",")
+			}
 		}
+		var relativePath = getRelativePath(sourcePath, path)
+		t.P("}from \"" + strings.Replace(relativePath, ".proto", "", 1) + "\"")
 	}
-	slices := strings.Split(fileName, "/")
-	var sliceslen = len(slices)
-
-	t.P("}from \"./" + slices[sliceslen-1] + "\"")
 	t.P("")
 }
 func (protoMessage *ProtoMessage) GenerateGeneralServiceClass(
@@ -142,4 +160,46 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 	}
 	t.P("}")
 	t.P("")
+}
+
+func IsContainInt(items []string, item string) bool {
+	for _, eachItem := range items {
+		if eachItem == item {
+			return true
+		}
+	}
+	return false
+}
+
+func ReverseSlice(slice []string) []string {
+	var sliceReversed []string
+	var sliceLen = len(slice)
+	for i := sliceLen - 1; i >= 0; i-- {
+		sliceReversed = append(sliceReversed, slice[i])
+	}
+	return sliceReversed
+}
+
+func getRelativePath(pathA string, pathB string) string {
+	var pathASlice = strings.Split(pathA, "/")
+	var pathBSlice = strings.Split(pathB, "/")
+	pathASlice = ReverseSlice(pathASlice)
+	var res = ""
+	for i, _ := range pathASlice {
+		if i == 0 {
+			res = res + "./"
+		} else {
+			res = res + "../"
+		}
+	}
+
+	for i, v := range pathBSlice {
+		if i != len(pathBSlice)-1 {
+			res = res + v + "/"
+		} else {
+			res = res + v
+		}
+	}
+
+	return res
 }

@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package PackageName;
+option go_package = "github.com/group/resp/TestService";
+
+message GetUserInfoResp{
+  string nickName = 1;
+  string avatarUrl = 2;
+  int32  gender = 3;
+  string country = 4;
+  string province = 5;
+  string city = 6;
+  string phone = 7;
+}
+
+message GetUserInfoReq{
+  string userId = 1;
+}
+
+
+
+service UserService{
+  rpc GetUserInfo(GetUserInfoReq) returns (GetUserInfoResp) {}
+}

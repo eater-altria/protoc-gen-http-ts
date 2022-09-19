@@ -16,14 +16,18 @@ type ProtoMessage struct {
 	//sevicer protoreflect.ServiceDescriptors
 }
 
+// rpc Service struct
 type ProtoService struct {
-	serviceName string
-	methods     []*protogen.Method
+	serviceName string             // rpc service name
+	methods     []*protogen.Method // rpc method list
 }
 
+// dependency info
+// for example: import {a, b} from './search_service'
+// ./serch_service is path, [a, b] is name
 type ImportedFile struct {
-	path protoreflect.SourcePath
-	name []protoreflect.Name
+	path protoreflect.SourcePath //imported file's path
+	name []protoreflect.Name     // imported ts interfaces name
 }
 
 func main() {
@@ -38,8 +42,11 @@ func main() {
 	}.Run(g.Generate)
 }
 
+// Generate main func
 func (protoMessage *ProtoMessage) Generate(plugin *protogen.Plugin) error {
+	// get all files need be compiled
 	var protoFiles = plugin.Files
+	// compile one by one
 	for _, file := range protoFiles {
 		protoMessage.GenerateOneFile(file, plugin)
 	}
@@ -47,11 +54,16 @@ func (protoMessage *ProtoMessage) Generate(plugin *protogen.Plugin) error {
 	return nil
 }
 
+// compile one proto file
 func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plugin *protogen.Plugin) error {
+	// if the proto file don't have service
+	// skip the proto.
 	if len(protoFile.Services) == 0 {
 		return nil
 	}
 
+	// save ts import info，
+	// key is path, value is interfaces which are imported from the path
 	var importInfo map[string][]string
 	importInfo = make(map[string][]string)
 
@@ -60,23 +72,37 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 	// add .http.ts prefix
 	var generateFileName = fileName + ".http.ts"
 
-	var services = make([]ProtoService, 10)
+	// collect all services from the proto file
+	var services []ProtoService
 
+	// generated file's path
 	var path = protogen.GoImportPath(protoFile.Desc.Path())
+
+	// t.P() can write message to generated file
 	var t = plugin.NewGeneratedFile(generateFileName, path)
+
 	for _, service := range protoFile.Services {
 		var protoService ProtoService
 		protoService.serviceName = string(service.Desc.Name())
 		var methods = service.Methods
 		for _, method := range methods {
+			// add method to corresponding service struct
 			protoService.methods = append(protoService.methods, method)
+
+			// inputImportPath is the path where the method input message from
 			var inputImportPath = string(method.Input.Location.SourceFile)
+			// input is the method input message's name
 			var input = string(method.Input.Desc.Name())
+			// get the imported interfaces from inputImportPath
 			var inputInterfaces = importInfo[inputImportPath]
+			// if inputInterfaces don't have current interface, push it
 			if !IsContainInt(inputInterfaces, input) {
 				inputInterfaces = append(inputInterfaces, input)
 			}
+			// update interfaces
 			importInfo[inputImportPath] = inputInterfaces
+
+			// do the same thing to output message.
 			var outputImportPath = string(method.Output.Location.SourceFile)
 			var output = string(method.Output.Desc.Name())
 			var outputInterfaes = importInfo[outputImportPath]
@@ -86,8 +112,12 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 			importInfo[outputImportPath] = outputInterfaes
 
 		}
+
+		// collect services info.
 		services = append(services, protoService)
 	}
+
+	// generate codes
 	protoMessage.GenerateImportSourceCodeV2(importInfo, fileName, t)
 	protoMessage.GenerateGeneralServiceClass(t)
 	for _, service := range services {
@@ -98,27 +128,32 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 	return nil
 }
 
+// generate code such as `import {xxx} from "xxx"`
+/**
+* needImportInterfaces: all interfaces need to be imported
+sourcePath: generate code's path
+*/
 func (protoMessage *ProtoMessage) GenerateImportSourceCodeV2(
 	needImportInterfaces map[string][]string,
 	sourcePath string,
 	t *protogen.GeneratedFile,
 ) {
 	for path, interfaces := range needImportInterfaces {
-		// t.P("----path----")
-		// t.P(path)
-		// t.P("----interfaces----")
-		// t.P(interfaces)
 		t.P("import {")
 		for _, interfae := range interfaces {
 			if len(interfae) > 0 {
 				t.P("  " + interfae + ",")
 			}
 		}
+		// relativePath is based on sourcePath and the interface's path,
 		var relativePath = getRelativePath(sourcePath, path)
 		t.P("}from '" + strings.Replace(relativePath, ".proto", "", 1) + "'")
 	}
 	t.P("")
 }
+
+// generate GeneralServiceClass
+// the class is extended by all other service.
 func (protoMessage *ProtoMessage) GenerateGeneralServiceClass(
 	t *protogen.GeneratedFile,
 ) {
@@ -133,6 +168,7 @@ func (protoMessage *ProtoMessage) GenerateGeneralServiceClass(
 	t.P("")
 }
 
+// generate one rpc Service
 func (protoMessage *ProtoMessage) GenerateServiceClass(
 	serviceName string,
 	methods []*protogen.Method,
@@ -160,6 +196,7 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 	t.P("")
 }
 
+// Check if an element exists in an array
 func IsContainInt(items []string, item string) bool {
 	for _, eachItem := range items {
 		if eachItem == item {
@@ -169,6 +206,7 @@ func IsContainInt(items []string, item string) bool {
 	return false
 }
 
+// reverce an array
 func ReverseSlice(slice []string) []string {
 	var sliceReversed []string
 	var sliceLen = len(slice)
@@ -178,6 +216,7 @@ func ReverseSlice(slice []string) []string {
 	return sliceReversed
 }
 
+// Calculate relative path of two files
 func getRelativePath(pathA string, pathB string) string {
 	var pathASlice = strings.Split(pathA, "/")
 	var pathBSlice = strings.Split(pathB, "/")

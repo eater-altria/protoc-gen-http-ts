@@ -118,7 +118,7 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 	}
 
 	// generate codes
-	protoMessage.GenerateImportSourceCodeV2(importInfo, fileName, t)
+	protoMessage.GenerateImportSourceCode(importInfo, fileName, t)
 	protoMessage.GenerateGeneralServiceClass(t)
 	for _, service := range services {
 		if len(service.serviceName) > 0 {
@@ -133,7 +133,7 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 * needImportInterfaces: all interfaces need to be imported
 sourcePath: generate code's path
 */
-func (protoMessage *ProtoMessage) GenerateImportSourceCodeV2(
+func (protoMessage *ProtoMessage) GenerateImportSourceCode(
 	needImportInterfaces map[string][]string,
 	sourcePath string,
 	t *protogen.GeneratedFile,
@@ -147,7 +147,7 @@ func (protoMessage *ProtoMessage) GenerateImportSourceCodeV2(
 		}
 		// relativePath is based on sourcePath and the interface's path,
 		var relativePath = getRelativePath(sourcePath, path)
-		t.P("}from '" + strings.Replace(relativePath, ".proto", "", 1) + "'")
+		t.P("} from '" + strings.Replace(relativePath, ".proto", "", 1) + "';")
 	}
 	t.P("")
 }
@@ -157,12 +157,12 @@ func (protoMessage *ProtoMessage) GenerateImportSourceCodeV2(
 func (protoMessage *ProtoMessage) GenerateGeneralServiceClass(
 	t *protogen.GeneratedFile,
 ) {
-	t.P("export type GeneralRequest = <TReq, TResp>(TReq, cmd: string, options?: any) => Promise<TResp>;")
+	t.P("export type GeneralRequest = <TReq, TResp>(cmd: string, payload: TReq, options?: any) => Promise<TResp>;")
 	t.P("")
 	t.P("export class GeneralClass {")
-	t.P("  GeneralRequestMethod: GeneralRequest;")
-	t.P("  constructor(GeneralRequestMethod: GeneralRequest) {")
-	t.P("    this.GeneralRequestMethod = GeneralRequestMethod;")
+	t.P("  generalRequestMethod: GeneralRequest;")
+	t.P("  constructor(generalRequestMethod: GeneralRequest) {")
+	t.P("    this.generalRequestMethod = generalRequestMethod;")
 	t.P("  };")
 	t.P("};")
 	t.P("")
@@ -175,20 +175,18 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 	t *protogen.GeneratedFile,
 ) {
 	t.P("export class " + serviceName + " extends GeneralClass {")
-	t.P("  constructor(GeneralRequestMethod: GeneralRequest) {")
-	t.P("    super(GeneralRequestMethod);")
-	t.P("  };")
 	for _, method := range methods {
 		var name = method.Desc.Name()
 		var input = method.Input.Desc.Name()
 		var output = method.Output.Desc.Name()
 		t.P("  " + name + "(payload: " + input + ", options?: any): Promise<" + output + "> {")
 		t.P("    return new Promise((resolve, reject) => {")
-		t.P("      this.GeneralRequestMethod<" + input + ", " + output + ">(payload, '" + name + "', options).then(res => {")
+		t.P("      this.generalRequestMethod<" + input + ", " + output + ">('" + name + "', payload, " + "options).then((res) => {")
 		t.P("        resolve(res);")
-		t.P("      }).catch(error => {")
-		t.P("        reject(error);")
-		t.P("      });")
+		t.P("      })")
+		t.P("        .catch((error) => {")
+		t.P("          reject(error);")
+		t.P("        });")
 		t.P("    });")
 		t.P("  };")
 	}

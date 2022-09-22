@@ -1,28 +1,26 @@
 import {
   GetUserInfoReq,
   GetUserInfoResp,
-}from './../sub_dir/user'
+} from './../sub_dir/user';
 
-export type GeneralRequest = <TReq, TResp>(TReq, cmd: string, options?: any) => Promise<TResp>;
+export type GeneralRequest = <TReq, TResp>(cmd: string, payload: TReq, options?: any) => Promise<TResp>;
 
 export class GeneralClass {
-  GeneralRequestMethod: GeneralRequest;
-  constructor(GeneralRequestMethod: GeneralRequest) {
-    this.GeneralRequestMethod = GeneralRequestMethod;
+  generalRequestMethod: GeneralRequest;
+  constructor(generalRequestMethod: GeneralRequest) {
+    this.generalRequestMethod = generalRequestMethod;
   };
 };
 
 export class UserService extends GeneralClass {
-  constructor(GeneralRequestMethod: GeneralRequest) {
-    super(GeneralRequestMethod);
-  };
   GetUserInfo(payload: GetUserInfoReq, options?: any): Promise<GetUserInfoResp> {
     return new Promise((resolve, reject) => {
-      this.GeneralRequestMethod<GetUserInfoReq, GetUserInfoResp>(payload, 'GetUserInfo', options).then(res => {
+      this.generalRequestMethod<GetUserInfoReq, GetUserInfoResp>('GetUserInfo', payload, options).then((res) => {
         resolve(res);
-      }).catch(error => {
-        reject(error);
-      });
+      })
+        .catch((error) => {
+          reject(error);
+        });
     });
   };
 };

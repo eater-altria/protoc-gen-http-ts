@@ -8,8 +8,8 @@ export type GeneralRequest = <TReq, TResp>(cmd: string, payload: TReq, options?:
 
 export class GeneralClass {
   generalRequestMethod: GeneralRequest;
-  constructor(generalRequestMethod: GeneralRequest) {
-    this.generalRequestMethod = generalRequestMethod;
+  constructor(generalRequestMethod: any) {
+    this.generalRequestMethod = generalRequestMethod as GeneralRequest;
   };
 };
 

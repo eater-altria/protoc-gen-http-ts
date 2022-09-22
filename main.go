@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"protoc-gen-http/util"
 	"strings"
 
 	"google.golang.org/protobuf/compiler/protogen"
@@ -96,7 +97,7 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 			// get the imported interfaces from inputImportPath
 			var inputInterfaces = importInfo[inputImportPath]
 			// if inputInterfaces don't have current interface, push it
-			if !IsContainInt(inputInterfaces, input) {
+			if !util.IsContainInt(inputInterfaces, input) {
 				inputInterfaces = append(inputInterfaces, input)
 			}
 			// update interfaces
@@ -106,7 +107,7 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 			var outputImportPath = string(method.Output.Location.SourceFile)
 			var output = string(method.Output.Desc.Name())
 			var outputInterfaes = importInfo[outputImportPath]
-			if !IsContainInt(outputInterfaes, output) {
+			if !util.IsContainInt(outputInterfaes, output) {
 				outputInterfaes = append(outputInterfaes, output)
 			}
 			importInfo[outputImportPath] = outputInterfaes
@@ -138,6 +139,7 @@ func (protoMessage *ProtoMessage) GenerateImportSourceCode(
 	sourcePath string,
 	t *protogen.GeneratedFile,
 ) {
+	t.P("/* eslint-disable */")
 	for path, interfaces := range needImportInterfaces {
 		t.P("import {")
 		for _, interfae := range interfaces {
@@ -146,7 +148,7 @@ func (protoMessage *ProtoMessage) GenerateImportSourceCode(
 			}
 		}
 		// relativePath is based on sourcePath and the interface's path,
-		var relativePath = getRelativePath(sourcePath, path)
+		var relativePath = util.GetRelativePath(sourcePath, path)
 		t.P("} from '" + strings.Replace(relativePath, ".proto", "", 1) + "';")
 	}
 	t.P("")
@@ -192,49 +194,4 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 	}
 	t.P("};")
 	t.P("")
-}
-
-// Check if an element exists in an array
-func IsContainInt(items []string, item string) bool {
-	for _, eachItem := range items {
-		if eachItem == item {
-			return true
-		}
-	}
-	return false
-}
-
-// reverce an array
-func ReverseSlice(slice []string) []string {
-	var sliceReversed []string
-	var sliceLen = len(slice)
-	for i := sliceLen - 1; i >= 0; i-- {
-		sliceReversed = append(sliceReversed, slice[i])
-	}
-	return sliceReversed
-}
-
-// Calculate relative path of two files
-func getRelativePath(pathA string, pathB string) string {
-	var pathASlice = strings.Split(pathA, "/")
-	var pathBSlice = strings.Split(pathB, "/")
-	pathASlice = ReverseSlice(pathASlice)
-	var res = ""
-	for i, _ := range pathASlice {
-		if i == 0 {
-			res = res + "./"
-		} else {
-			res = res + "../"
-		}
-	}
-
-	for i, v := range pathBSlice {
-		if i != len(pathBSlice)-1 {
-			res = res + v + "/"
-		} else {
-			res = res + v
-		}
-	}
-
-	return res
 }

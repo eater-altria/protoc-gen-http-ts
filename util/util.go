@@ -2,7 +2,7 @@ package util
 
 import "strings"
 
-// Check if an element exists in an array
+// IsContainInt Check if an element exists in an array
 func IsContainInt(items []string, item string) bool {
 	for _, eachItem := range items {
 		if eachItem == item {
@@ -12,7 +12,7 @@ func IsContainInt(items []string, item string) bool {
 	return false
 }
 
-// reverce an array
+// ReverseSlice reverse an array
 func ReverseSlice(slice []string) []string {
 	var sliceReversed []string
 	var sliceLen = len(slice)
@@ -22,7 +22,7 @@ func ReverseSlice(slice []string) []string {
 	return sliceReversed
 }
 
-// Calculate relative path of two files
+// GetRelativePath Calculate relative path of two files
 func GetRelativePath(pathA string, pathB string) string {
 	var pathASlice = strings.Split(pathA, "/")
 	var pathBSlice = strings.Split(pathB, "/")

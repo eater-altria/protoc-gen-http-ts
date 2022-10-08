@@ -6,6 +6,6 @@ await $`protoc \
   --ts_out=./test_protos \
   --plugin=protoc-gen-http=./main \
   --http_out=./test_protos \
-  --http_opt=nameCase=camel \
+  --http_opt=nameCase=pascal \
   ./test_protos/test.proto
   `

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"protoc-gen-http/util"
 	"strings"
 
@@ -33,18 +32,19 @@ type ImportedFile struct {
 
 func main() {
 	var g = ProtoMessage{}
-
-	var nameStyleString = ""
-
-	var flags flag.FlagSet
-	flags.StringVar(&nameStyleString, "nameCase", "camel", "方法命名风格")
-
-	var nameStyle = util.TransStringToNameStyle(nameStyleString)
-	g.nameCase = nameStyle
-
 	protogen.Options{
-		ParamFunc: flags.Set,
+		ParamFunc: getCompileOption(&g),
 	}.Run(g.Generate)
+}
+
+func getCompileOption(g *ProtoMessage) func(key string, value string) error {
+	var setFunc = func(key string, value string) error {
+		if key == "nameCase" {
+			g.nameCase = util.TransStringToNameStyle(value)
+		}
+		return nil
+	}
+	return setFunc
 }
 
 // Generate main func

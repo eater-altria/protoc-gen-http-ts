@@ -14,9 +14,9 @@ export class GeneralClass {
 };
 
 export class UserService extends GeneralClass {
-  GetUserInfo(payload: GetUserInfoReq, options?: any): Promise<GetUserInfoResp> {
+  getUserInfo(payload: GetUserInfoReq, options?: any): Promise<GetUserInfoResp> {
     return new Promise((resolve, reject) => {
-      this.generalRequestMethod<GetUserInfoReq, GetUserInfoResp>('GetUserInfo', payload, options).then((res) => {
+      this.generalRequestMethod<GetUserInfoReq, GetUserInfoResp>('getUserInfo', payload, options).then((res) => {
         resolve(res);
       })
         .catch((error) => {

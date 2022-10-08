@@ -12,7 +12,7 @@ import (
 //import vector "container/vector"
 
 type ProtoMessage struct {
-	Prefix   string
+	nameCase util.NameStyle
 	messages []protoreflect.FullName
 	//service protector.ServiceDescriptors
 }
@@ -34,9 +34,13 @@ type ImportedFile struct {
 func main() {
 	var g = ProtoMessage{}
 
-	var flags flag.FlagSet
+	var nameStyleString = ""
 
-	flags.StringVar(&g.Prefix, "prefix", "/", "API path prefix")
+	var flags flag.FlagSet
+	flags.StringVar(&nameStyleString, "nameCase", "camel", "方法命名风格")
+
+	var nameStyle = util.TransStringToNameStyle(nameStyleString)
+	g.nameCase = nameStyle
 
 	protogen.Options{
 		ParamFunc: flags.Set,
@@ -45,6 +49,9 @@ func main() {
 
 // Generate main func
 func (protoMessage *ProtoMessage) Generate(plugin *protogen.Plugin) error {
+	if protoMessage.nameCase == util.UNKNOWN {
+		return nil
+	}
 	// get all files need be compiled
 	var protoFiles = plugin.Files
 	// compile one by one
@@ -178,15 +185,19 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 	serviceName string,
 	methods []*protogen.Method,
 	t *protogen.GeneratedFile,
-) {
+) error {
 	t.P("export class " + serviceName + " extends GeneralClass {")
 	for _, method := range methods {
 		var name = method.Desc.Name()
-		var input = method.Input.Desc.Name()
-		var output = method.Output.Desc.Name()
-		t.P("  " + name + "(payload: " + input + ", options?: any): Promise<" + output + "> {")
+		transformdName, err := util.TransformNameStyle(string(name), protoMessage.nameCase)
+		if err != nil {
+			return err
+		}
+		var input = string(method.Input.Desc.Name())
+		var output = string(method.Output.Desc.Name())
+		t.P("  " + transformdName + "(payload: " + input + ", options?: any): Promise<" + output + "> {")
 		t.P("    return new Promise((resolve, reject) => {")
-		t.P("      this.generalRequestMethod<" + input + ", " + output + ">('" + name + "', payload, " + "options).then((res) => {")
+		t.P("      this.generalRequestMethod<" + input + ", " + output + ">('" + transformdName + "', payload, " + "options).then((res) => {")
 		t.P("        resolve(res);")
 		t.P("      })")
 		t.P("        .catch((error) => {")
@@ -197,4 +208,5 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 	}
 	t.P("};")
 	t.P("")
+	return nil
 }

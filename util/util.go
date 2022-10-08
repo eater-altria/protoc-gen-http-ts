@@ -58,6 +58,7 @@ const (
 	PascalCase NameStyle = 0
 	CamelCase  NameStyle = 1
 	SnakeCase  NameStyle = 2
+	UNKNOWN    NameStyle = 3
 )
 
 func (nameStyle NameStyle) String() string {
@@ -71,6 +72,17 @@ func (nameStyle NameStyle) String() string {
 	default:
 		return "UNKNOWN"
 	}
+}
+
+func TransStringToNameStyle(name string) NameStyle {
+	if PascalCase.String() == name {
+		return PascalCase
+	} else if CamelCase.String() == name {
+		return CamelCase
+	} else if SnakeCase.String() == name {
+		return SnakeCase
+	}
+	return UNKNOWN
 }
 
 func transPascalToCamel(oldName string) string {

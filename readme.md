@@ -2,17 +2,15 @@
 
 > `protoc-gen-http-ts` transforms your `.proto` files into out-of-the-box http method By Typescript!
 
-(This photo plugin is in a very early stage of development， so **DO NOT USE IT IN YOUR PRODUCTION ENVIRNMENT!!**)
-
-(Welcome any issues. If you have some idea, please leave me an issue!)
+Welcome any issues. If you have some idea, please leave me an issue!
 
 [TOC]
 
 # Overview
 
-More and More backend services use micro-service arch, all the services are micro-service which communicate by gRPC. When we need to request a certain service, we expose it as http interface.  If your group use  this arch, the plugin may be helpful you.
+More and More backend services use micro-service arch, all the services are micro-service which communicate by gRPC. When we need to request a certain service, we expose it as http interface.  If your team use  this arch, the plugin may be helpful to you.
 
-In this model, HTTP interfaces and gRPC methods are one-to-one correspondence. So it makes generate TS source code to make http request by proto file possible.
+In this arch, HTTP interfaces and gRPC methods are one-to-one correspondence. So it makes generate TS source code which issue http requests by proto file possible.
 
 If we input a proto file just like it: 
 
@@ -21,6 +19,8 @@ syntax = "proto3";
 
 package PackageName;
 option go_package = "github.com/group/resp/TestService";
+
+import "sub_dir/user.proto";
 
 
 
@@ -44,45 +44,59 @@ message SearchResponse {
 
 service SearchService{
     rpc SearchByKeyword(SearchRequest) returns (SearchResponse){}
+    rpc GetUserInfo(GetUserInfoReq) returns (GetUserInfoResp) {}
 }
 ```
 
 We will get TS code:
 
 ```typescript
+/* eslint-disable */
 import {
-  SearchResponse,
+  GetUserInfoReq,
+  GetUserInfoResp,
+} from './sub_dir/user';
+import {
   SearchRequest,
-}from "./test"
+  SearchResponse,
+} from './test';
 
-export type GeneralRequest = <TReq, TResp>(TReq, cmd: string, options?: any) => Promise<TResp>
+export type GeneralRequest = <TReq, TResp>(cmd: string, payload: TReq, options?: any) => Promise<TResp>;
 
 export class GeneralClass {
-  GeneralRequestMethod: GeneralRequest;
-  constructor(GeneralRequestMethod: GeneralRequest) {
-    this.GeneralRequestMethod = GeneralRequestMethod;
-  }
-}
+  generalRequestMethod: GeneralRequest;
+  constructor(generalRequestMethod: any) {
+    this.generalRequestMethod = generalRequestMethod as GeneralRequest;
+  };
+};
 
 export class SearchService extends GeneralClass {
-  constructor(GeneralRequestMethod: GeneralRequest) {
-    super(GeneralRequestMethod)
-  }
-  SearchByKeyword(payload: SearchRequest, options?: any): Promise<SearchResponse> {
+  searchByKeyword(payload: SearchRequest, options?: any): Promise<SearchResponse> {
     return new Promise((resolve, reject) => {
-      this.GeneralRequestMethod<SearchRequest,SearchResponse>(payload, 'SearchByKeyword', options).then(res => {
-        resolve(res)
-      }).catch(error => {
-        reject(error)
+      this.generalRequestMethod<SearchRequest, SearchResponse>('searchByKeyword', payload, options).then((res) => {
+        resolve(res);
       })
-    })
-  }
-}
+        .catch((error) => {
+          reject(error);
+        });
+    });
+  };
+  getUserInfo(payload: GetUserInfoReq, options?: any): Promise<GetUserInfoResp> {
+    return new Promise((resolve, reject) => {
+      this.generalRequestMethod<GetUserInfoReq, GetUserInfoResp>('getUserInfo', payload, options).then((res) => {
+        resolve(res);
+      })
+        .catch((error) => {
+          reject(error);
+        });
+    });
+  };
+};
 
 
 ```
 
-You can import a certen service class, and  instantiate an object to use all the api without any other operation. The constructor need your common http request method. The request method often has very complex logic and hooks which can not describe with some complie options and this is why I did not choose to implement request method myself.
+You can import a certen service class, and  instantiate to an object to use all the api methods without any other operation. The constructor need your common http request method in your project. The request method often has very complex logic and hooks which can not describe with some complie options and this is why I did not choose to implement request method myself.
 
 The output code is strongly-typed. Instead of implement compilation of types, I opted to use another plugin to compile types：[stephenh/ts-proto: An idiomatic protobuf generator for TypeScript (github.com)](https://github.com/stephenh/ts-proto)
 
@@ -138,9 +152,16 @@ Currently I have not uploaded it to any package management platform. So you need
 
 
 
+# Compile Options
+
+- with`--http_opt=nameCase=xxx`, you can get service methods which has specific name style. There are values supported:
+  - camel: camelCase
+  - pascal: PascalCase
+  - snake: snake_case
+
+
+
 # Follow-up planning
 
-- Multi-file compile. Now if input multi files and they has dependency relationship, it can't import interface from current file.
-- N+1 problem. If we try to resolve the first problem, there will be a N + 1 promble to overcome.
 - More compilation options to adapt to different usage scenarios.
 - Easier to install.

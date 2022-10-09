@@ -4,8 +4,6 @@
 
 Welcome any issues. If you have some idea, please leave me an issue!
 
-[TOC]
-
 # Overview
 
 More and More backend services use micro-service arch, all the services are micro-service which communicate by gRPC. When we need to request a certain service, we expose it as http interface.  If your team use  this arch, the plugin may be helpful to you.
@@ -108,7 +106,21 @@ The output code is strongly-typed. Instead of implement compilation of types, I 
 
 
 
-Currently I have not uploaded it to any package management platform. So you need to clone this repository and compile it yourself. After I implement the main function, I will try to make it easier to use.
+## As a NPM package
+
+If you don't want to compile it yourself, you can use the npm package.
+
+```sh
+npm install @eater-altria/protoc-gen-http-ts --save
+```
+
+It will download corresponding binary program at `./node_modules/@eater-altria/protoc-gen-http-ts/protoc-gen-http-ts`
+
+Then, you can use it! But now it only support Linux, MacOS and WSL, because I use `wget` to download the binary program. I will resolve this problem quickly!
+
+
+
+## Compile it yourself
 
 - Firstly, you need install Golang SDK and the version is higher than 1.18. You can refer to Golang's official website: [The Go Programming Language](https://go.dev/). 
 
@@ -152,7 +164,7 @@ Currently I have not uploaded it to any package management platform. So you need
 
 
 
-# Compile Options
+# Compile options
 
 - with`--http_opt=nameCase=xxx`, you can get service methods which has specific name style. There are values supported:
   - camel: camelCase

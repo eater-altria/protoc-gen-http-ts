@@ -39,6 +39,7 @@ func main() {
 
 func getCompileOption(g *ProtoMessage) func(key string, value string) error {
 	var setFunc = func(key string, value string) error {
+		// set option values
 		if key == "nameCase" {
 			g.nameCase = util.TransStringToNameStyle(value)
 		}

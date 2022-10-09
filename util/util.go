@@ -55,8 +55,8 @@ func GetRelativePath(pathA string, pathB string) string {
 type NameStyle int32
 
 const (
-	PascalCase NameStyle = 0
-	CamelCase  NameStyle = 1
+	CamelCase  NameStyle = 0
+	PascalCase NameStyle = 1
 	SnakeCase  NameStyle = 2
 	UNKNOWN    NameStyle = 3
 )

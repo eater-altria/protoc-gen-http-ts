@@ -70,6 +70,7 @@ func (protoMessage *ProtoMessage) Generate(plugin *protogen.Plugin) error {
 func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plugin *protogen.Plugin) error {
 	// if the proto file don't have service
 	// skip the proto.
+	var code []string
 	if len(protoFile.Services) == 0 {
 		return nil
 	}
@@ -130,13 +131,19 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 	}
 
 	// generate codes
-	protoMessage.GenerateImportSourceCode(importInfo, fileName, t)
-	protoMessage.GenerateGeneralServiceClass(t)
+	code = append(code, protoMessage.GenerateImportSourceCode(importInfo, fileName)...)
+	code = append(code, protoMessage.GenerateGeneralServiceClass()...)
 	for _, service := range services {
 		if len(service.serviceName) > 0 {
-			protoMessage.GenerateServiceClass(service.serviceName, service.methods, t)
+			var serviceCode, err = protoMessage.GenerateServiceClass(service.serviceName, service.methods)
+			if err == nil {
+				code = append(code, serviceCode...)
+			} else {
+				return err
+			}
 		}
 	}
+	t.P(strings.Join(code[:], "\n"))
 	return nil
 }
 
@@ -148,66 +155,71 @@ sourcePath: generate code's path
 func (protoMessage *ProtoMessage) GenerateImportSourceCode(
 	needImportInterfaces map[string][]string,
 	sourcePath string,
-	t *protogen.GeneratedFile,
-) {
-	t.P("/* eslint-disable */")
+) []string {
+	var code []string
+	code = append(code, "/* eslint-disable */")
+
 	for path, interfaces := range needImportInterfaces {
-		t.P("import {")
+		code = append(code, "import {")
 		for _, interfae := range interfaces {
 			if len(interfae) > 0 {
-				t.P("  " + interfae + ",")
+				code = append(code, "  "+interfae+",")
 			}
 		}
 		// relativePath is based on sourcePath and the interface's path,
 		var relativePath = util.GetRelativePath(sourcePath, path)
-		t.P("} from '" + strings.Replace(relativePath, ".proto", "", 1) + "';")
+		code = append(code, "} from '"+strings.Replace(relativePath, ".proto", "", 1)+"';")
 	}
-	t.P("")
+	code = append(code, "")
+	return code
 }
 
 // GenerateGeneralServiceClass generate GeneralServiceClass
 // the class is extended by all other service.
-func (protoMessage *ProtoMessage) GenerateGeneralServiceClass(
-	t *protogen.GeneratedFile,
-) {
-	t.P("export type GeneralRequest = <TReq, TResp>(cmd: string, payload: TReq, options?: any) => Promise<TResp>;")
-	t.P("")
-	t.P("export class GeneralClass {")
-	t.P("  generalRequestMethod: GeneralRequest;")
-	t.P("  constructor(generalRequestMethod: any) {")
-	t.P("    this.generalRequestMethod = generalRequestMethod as GeneralRequest;")
-	t.P("  };")
-	t.P("};")
-	t.P("")
+func (protoMessage *ProtoMessage) GenerateGeneralServiceClass() []string {
+	var code = []string{
+		"export type GeneralRequest = <TReq, TResp>(cmd: string, payload: TReq, options?: any) => Promise<TResp>;",
+		"",
+		"export class GeneralClass {",
+		"  generalRequestMethod: GeneralRequest;",
+		"  constructor(generalRequestMethod: any) {",
+		"    this.generalRequestMethod = generalRequestMethod as GeneralRequest;",
+		"  };",
+		"};",
+		"",
+	}
+	return code
 }
 
 // GenerateServiceClass generate one rpc Service
 func (protoMessage *ProtoMessage) GenerateServiceClass(
 	serviceName string,
 	methods []*protogen.Method,
-	t *protogen.GeneratedFile,
-) error {
-	t.P("export class " + serviceName + " extends GeneralClass {")
+) ([]string, error) {
+	var code = []string{
+		"export class " + serviceName + " extends GeneralClass {",
+	}
 	for _, method := range methods {
 		var name = method.Desc.Name()
 		transformdName, err := util.TransformNameStyle(string(name), protoMessage.nameCase)
 		if err != nil {
-			return err
+			return make([]string, 0), err
 		}
 		var input = string(method.Input.Desc.Name())
 		var output = string(method.Output.Desc.Name())
-		t.P("  " + transformdName + "(payload: " + input + ", options?: any): Promise<" + output + "> {")
-		t.P("    return new Promise((resolve, reject) => {")
-		t.P("      this.generalRequestMethod<" + input + ", " + output + ">('" + transformdName + "', payload, " + "options).then((res) => {")
-		t.P("        resolve(res);")
-		t.P("      })")
-		t.P("        .catch((error) => {")
-		t.P("          reject(error);")
-		t.P("        });")
-		t.P("    });")
-		t.P("  };")
+		code = append(code, "  "+transformdName+"(payload: "+input+", options?: any): Promise<"+output+"> {")
+		code = append(code, "    return new Promise((resolve, reject) => {")
+		code = append(code, "      this.generalRequestMethod<"+input+", "+output+">('"+transformdName+"', payload, "+"options).then((res) => {")
+		code = append(code, "        resolve(res);")
+		code = append(code, "      })")
+		code = append(code, "        .catch((error) => {")
+		code = append(code, "          reject(error);")
+		code = append(code, "        });")
+		code = append(code, "    });")
+		code = append(code, "  };")
 	}
-	t.P("};")
-	t.P("")
-	return nil
+	code = append(code, "};")
+	code = append(code, "")
+
+	return code, nil
 }

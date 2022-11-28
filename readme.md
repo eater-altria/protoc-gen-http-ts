@@ -172,8 +172,3 @@ Then, you can use it! But now it only support Linux, MacOS and WSL, because I us
   - snake: snake_case
 
 
-
-# Follow-up planning
-
-- More compilation options to adapt to different usage scenarios.
-- Easier to install.

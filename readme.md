@@ -142,11 +142,11 @@ Then, you can use it! But now it only support Linux, MacOS and WSL, because I us
 
   ```sh
   protoc \
-  --proto_path=./ \
+  --proto_path=./test_protos \
   --plugin=protoc-gen-http=./main \
   --plugin=protoc-gen-ts=/usr/local/bin/protoc-gen-ts_proto \
-  --http_out=./ \
-  --ts_out=./ \
+  --http_out=./out \
+  --ts_out=./out \
   ./test_protos/*.proto
   ```
 

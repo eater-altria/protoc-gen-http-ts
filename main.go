@@ -77,8 +77,8 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 
 	// save ts import info，
 	// key is path, value is interfaces which are imported from the path
-	var importInfo map[string][]string
-	importInfo = make(map[string][]string)
+	var importInfo map[string][]util.InterfaceName
+	importInfo = make(map[string][]util.InterfaceName)
 
 	// fileName is just like ./test_protos/test. Remove prefix of .proto
 	var fileName = strings.Replace(protoFile.Desc.Path(), ".proto", "", 1)
@@ -105,11 +105,13 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 			// inputImportPath is the path where the method input message from
 			var inputImportPath = method.Input.Location.SourceFile
 			// input is the method input message's name
-			var input = string(method.Input.Desc.Name())
+			var input util.InterfaceName
+			input.RealName = string(method.Input.Desc.Name())
+			input.FullName = string(method.Input.Desc.FullName())
 			// get the imported interfaces from inputImportPath
 			var inputInterfaces = importInfo[inputImportPath]
 			// if inputInterfaces don't have current interface, push it
-			if !util.IsContainInt(inputInterfaces, input) {
+			if !util.IsContainInterfaceName(inputInterfaces, input.RealName) {
 				inputInterfaces = append(inputInterfaces, input)
 			}
 			// update interfaces
@@ -117,9 +119,11 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 
 			// do the same thing to output message.
 			var outputImportPath = method.Output.Location.SourceFile
-			var output = string(method.Output.Desc.Name())
+			var output util.InterfaceName
+			output.RealName = string(method.Output.Desc.Name())
+			output.FullName = string(method.Output.Desc.FullName())
 			var outputInterfaces = importInfo[outputImportPath]
-			if !util.IsContainInt(outputInterfaces, output) {
+			if !util.IsContainInterfaceName(outputInterfaces, output.RealName) {
 				outputInterfaces = append(outputInterfaces, output)
 			}
 			importInfo[outputImportPath] = outputInterfaces
@@ -153,7 +157,7 @@ func (protoMessage *ProtoMessage) GenerateOneFile(protoFile *protogen.File, plug
 sourcePath: generate code's path
 */
 func (protoMessage *ProtoMessage) GenerateImportSourceCode(
-	needImportInterfaces map[string][]string,
+	needImportInterfaces map[string][]util.InterfaceName,
 	sourcePath string,
 ) []string {
 	var code []string
@@ -161,9 +165,9 @@ func (protoMessage *ProtoMessage) GenerateImportSourceCode(
 
 	for path, interfaces := range needImportInterfaces {
 		code = append(code, "import {")
-		for _, interfae := range interfaces {
-			if len(interfae) > 0 {
-				code = append(code, "  "+interfae+",")
+		for _, eachInterface := range interfaces {
+			if len(eachInterface.RealName) > 0 {
+				code = append(code, "  "+eachInterface.RealName+" as "+util.ConvertToUnderscore(eachInterface.FullName)+",")
 			}
 		}
 		// relativePath is based on sourcePath and the interface's path,
@@ -205,8 +209,8 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 		if err != nil {
 			return make([]string, 0), err
 		}
-		var input = string(method.Input.Desc.Name())
-		var output = string(method.Output.Desc.Name())
+		var input = util.ConvertToUnderscore(string(method.Input.Desc.FullName()))
+		var output = util.ConvertToUnderscore(string(method.Output.Desc.FullName()))
 		code = append(code, "  "+transformdName+"(payload: "+input+", options?: any): Promise<"+output+"> {")
 		code = append(code, "    return new Promise((resolve, reject) => {")
 		code = append(code, "      this.generalRequestMethod<"+input+", "+output+">('"+transformdName+"', payload, "+"options).then((res) => {")

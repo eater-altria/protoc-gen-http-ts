@@ -7,10 +7,31 @@ import (
 	"unicode"
 )
 
+type InterfaceName struct {
+	RealName string
+	FullName string
+}
+
 // IsContainInt Check if an element exists in an array
 func IsContainInt(items []string, item string) bool {
 	for _, eachItem := range items {
 		if eachItem == item {
+			return true
+		}
+	}
+	return false
+}
+
+func ConvertToUnderscore(str string) string {
+	// replace '.' with '_'
+	str = strings.ReplaceAll(str, ".", "_")
+
+	return str
+}
+
+func IsContainInterfaceName(items []InterfaceName, item string) bool {
+	for _, eachItem := range items {
+		if eachItem.RealName == item {
 			return true
 		}
 	}

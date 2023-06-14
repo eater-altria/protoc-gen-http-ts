@@ -19,3 +19,4 @@ test_protos/*/*.ts
 
 .idea
 release/
+/out

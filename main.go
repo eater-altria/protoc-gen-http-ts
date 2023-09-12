@@ -1,8 +1,9 @@
 package main
 
 import (
-	"protoc-gen-http/util"
 	"strings"
+
+	"github.com/eater-altria/protoc-gen-http-ts/util"
 
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"

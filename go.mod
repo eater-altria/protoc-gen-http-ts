@@ -1,4 +1,4 @@
-module protoc-gen-http
+module github.com/eater-altria/protoc-gen-http-ts
 
 go 1.18
 

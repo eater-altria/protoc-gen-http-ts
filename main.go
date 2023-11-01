@@ -4,9 +4,9 @@ import (
 	"strings"
 
 	"github.com/eater-altria/protoc-gen-http-ts/util"
-
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/pluginpb"
 )
 
 //import vector "container/vector"
@@ -54,6 +54,7 @@ func (protoMessage *ProtoMessage) Generate(plugin *protogen.Plugin) error {
 	if protoMessage.nameCase == util.UNKNOWN {
 		return nil
 	}
+	plugin.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 	// get all files need be compiled
 	var protoFiles = plugin.Files
 	// compile one by one
@@ -206,7 +207,14 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 	}
 	for _, method := range methods {
 		var name = method.Desc.Name()
-		transformdName, err := util.TransformNameStyle(string(name), protoMessage.nameCase)
+
+		// 后台需要 帕斯卡命名规则
+		transformdName, err := util.TransformNameStyle(string(name), util.PascalCase)
+
+		// 后端请求 url 命名规则：package + serviceName + transformdName
+		// 举例： /lixin.dos.boss_bff.v1.BossBffService/CreateRole
+		requestMethodName := serviceName + "/" + transformdName
+
 		if err != nil {
 			return make([]string, 0), err
 		}
@@ -214,7 +222,7 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 		var output = util.ConvertToUnderscore(string(method.Output.Desc.FullName()))
 		code = append(code, "  "+transformdName+"(payload: "+input+", options?: any): Promise<"+output+"> {")
 		code = append(code, "    return new Promise((resolve, reject) => {")
-		code = append(code, "      this.generalRequestMethod<"+input+", "+output+">('"+transformdName+"', payload, "+"options).then((res) => {")
+		code = append(code, "      this.generalRequestMethod<"+input+", "+output+">('"+requestMethodName+"', payload, "+"options).then((res) => {")
 		code = append(code, "        resolve(res);")
 		code = append(code, "      })")
 		code = append(code, "        .catch((error) => {")

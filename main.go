@@ -220,6 +220,12 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 		}
 		var input = util.ConvertToUnderscore(string(method.Input.Desc.FullName()))
 		var output = util.ConvertToUnderscore(string(method.Output.Desc.FullName()))
+
+		// protoc 里面的注释
+		commentStr := util.GenerateComment(method.Comments, false, "")
+
+		// 增加注释
+		code = append(code, "  "+commentStr)
 		code = append(code, "  "+transformdName+"(payload: "+input+", options?: any): Promise<"+output+"> {")
 		code = append(code, "    return new Promise((resolve, reject) => {")
 		code = append(code, "      this.generalRequestMethod<"+input+", "+output+">('"+requestMethodName+"', payload, "+"options).then((res) => {")

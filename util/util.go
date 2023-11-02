@@ -1,10 +1,13 @@
 package util
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"syscall"
 	"unicode"
+
+	"google.golang.org/protobuf/compiler/protogen"
 )
 
 type InterfaceName struct {
@@ -239,4 +242,53 @@ func TransformNameStyle(oldName string, targetStyle NameStyle) (string, error) {
 	}
 
 	return "", syscall.Errno(1)
+}
+
+// 生成 typescript 注释
+func GenerateComment(methodCommentSet protogen.CommentSet, deprecated bool, prefix string) string {
+	var lines []string
+
+	// 顶部注释
+	leadingStr := methodCommentSet.Leading.String()
+
+	// 尾注释
+	trailingStr := methodCommentSet.Trailing.String()
+
+	// 有注释才操作
+	if len(leadingStr) > 0 || len(trailingStr) > 0 {
+		// 去掉 *
+		content := strings.Replace(strings.TrimSpace(leadingStr+trailingStr), "*", "", -1)
+		// 去掉 斜杠 //
+		content = strings.Replace(content, "/", "", -1)
+
+		// 前缀
+		if prefix != "" {
+			content = prefix + content
+		}
+
+		lines = strings.Split(content, "\n")
+		for i := range lines {
+			lines[i] = strings.TrimSpace(strings.TrimLeft(lines[i], " "))
+			// 注意需要2个换行符，才会在IDE里面显示换行
+			lines[i] = strings.TrimRight(lines[i], "\n")
+		}
+	}
+
+	// 如果废弃函数，增加 jsDoc 语义化注释
+	if deprecated {
+		if len(lines) > 0 {
+			lines = append(lines, "")
+		}
+		lines = append(lines, "@deprecated")
+	}
+
+	var commentStr string
+	if len(lines) == 1 {
+		commentStr = string((fmt.Sprintf("/** %s */", lines[0])))
+	} else if len(lines) > 1 {
+		// 这里为了跟输出代码对齐
+		commentStr = string(fmt.Sprintf("/**\n"+"   "+"* %s \n   */", strings.Join(lines, "\n   * \n   * ")))
+	}
+
+	return commentStr
 }

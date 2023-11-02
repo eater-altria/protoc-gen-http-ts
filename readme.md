@@ -6,11 +6,11 @@ Welcome any issues. If you have some idea, please leave me an issue!
 
 # Overview
 
-More and More backend services use micro-service arch, all the services are micro-service which communicate by gRPC. When we need to request a certain service, we expose it as http interface.  If your team use  this arch, the plugin may be helpful to you.
+More and More backend services use micro-service arch, all the services are micro-service which communicate by gRPC. When we need to request a certain service, we expose it as http interface. If your team use this arch, the plugin may be helpful to you.
 
 In this arch, HTTP interfaces and gRPC methods are one-to-one correspondence. So it makes generate TS source code which issue http requests by proto file possible.
 
-If we input a proto file just like it: 
+If we input a proto file just like it:
 
 ```protobuf
 syntax = "proto3";
@@ -50,61 +50,73 @@ We will get TS code:
 
 ```typescript
 /* eslint-disable */
-import {
-  GetUserInfoReq,
-  GetUserInfoResp,
-} from './sub_dir/user';
-import {
-  SearchRequest,
-  SearchResponse,
-} from './test';
+import { GetUserInfoReq, GetUserInfoResp } from "./sub_dir/user";
+import { SearchRequest, SearchResponse } from "./test";
 
-export type GeneralRequest = <TReq, TResp>(cmd: string, payload: TReq, options?: any) => Promise<TResp>;
+export type GeneralRequest = <TReq, TResp>(
+  cmd: string,
+  payload: TReq,
+  options?: any
+) => Promise<TResp>;
 
 export class GeneralClass {
   generalRequestMethod: GeneralRequest;
   constructor(generalRequestMethod: any) {
     this.generalRequestMethod = generalRequestMethod as GeneralRequest;
-  };
-};
+  }
+}
 
 export class SearchService extends GeneralClass {
-  searchByKeyword(payload: SearchRequest, options?: any): Promise<SearchResponse> {
+  /**
+   * 按关键词搜索
+   */
+  searchByKeyword(
+    payload: SearchRequest,
+    options?: any
+  ): Promise<SearchResponse> {
     return new Promise((resolve, reject) => {
-      this.generalRequestMethod<SearchRequest, SearchResponse>('searchByKeyword', payload, options).then((res) => {
-        resolve(res);
-      })
+      this.generalRequestMethod<SearchRequest, SearchResponse>(
+        "searchByKeyword",
+        payload,
+        options
+      )
+        .then((res) => {
+          resolve(res);
+        })
         .catch((error) => {
           reject(error);
         });
     });
-  };
-  getUserInfo(payload: GetUserInfoReq, options?: any): Promise<GetUserInfoResp> {
+  }
+  /**
+   * 获取用户信息
+   */
+  getUserInfo(
+    payload: GetUserInfoReq,
+    options?: any
+  ): Promise<GetUserInfoResp> {
     return new Promise((resolve, reject) => {
-      this.generalRequestMethod<GetUserInfoReq, GetUserInfoResp>('getUserInfo', payload, options).then((res) => {
-        resolve(res);
-      })
+      this.generalRequestMethod<GetUserInfoReq, GetUserInfoResp>(
+        "getUserInfo",
+        payload,
+        options
+      )
+        .then((res) => {
+          resolve(res);
+        })
         .catch((error) => {
           reject(error);
         });
     });
-  };
-};
-
-
+  }
+}
 ```
 
-You can import a certen service class, and  instantiate to an object to use all the api methods without any other operation. The constructor need your common http request method in your project. The request method often has very complex logic and hooks which can not describe with some complie options and this is why I did not choose to implement request method myself.
+You can import a certen service class, and instantiate to an object to use all the api methods without any other operation. The constructor need your common http request method in your project. The request method often has very complex logic and hooks which can not describe with some complie options and this is why I did not choose to implement request method myself.
 
 The output code is strongly-typed. Instead of implement compilation of types, I opted to use another plugin to compile types：[stephenh/ts-proto: An idiomatic protobuf generator for TypeScript (github.com)](https://github.com/stephenh/ts-proto)
 
-
-
-
-
 # How to use
-
-
 
 ## As a NPM package
 
@@ -118,11 +130,9 @@ It will download corresponding binary program at `./node_modules/@eater-altria/p
 
 Then, you can use it! But now it only support Linux, MacOS and WSL, because I use `wget` to download the binary program. I will resolve this problem quickly!
 
-
-
 ## Compile it yourself
 
-- Firstly, you need install Golang SDK and the version is higher than 1.18. You can refer to Golang's official website: [The Go Programming Language](https://go.dev/). 
+- Firstly, you need install Golang SDK and the version is higher than 1.18. You can refer to Golang's official website: [The Go Programming Language](https://go.dev/).
 
 - Install dependencies：
 
@@ -157,12 +167,14 @@ Then, you can use it! But now it only support Linux, MacOS and WSL, because I us
   A rpc service correspond a service class. Import your class ,and provide a common http request method like this:
 
   ```typescript
-  export type GeneralRequest = <TReq, TResp>(TReq, cmd: string, options?: any) => Promise<TResp>
+  export type GeneralRequest = <TReq, TResp>(
+    TReq,
+    cmd: string,
+    options?: any
+  ) => Promise<TResp>;
   ```
 
   Then, you can request the corresponding interface!
-
-
 
 # Compile options
 
@@ -170,5 +182,3 @@ Then, you can use it! But now it only support Linux, MacOS and WSL, because I us
   - camel: camelCase
   - pascal: PascalCase
   - snake: snake_case
-
-

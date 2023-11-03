@@ -20,8 +20,6 @@ option go_package = "github.com/group/resp/TestService";
 
 import "sub_dir/user.proto";
 
-
-
 message SearchRequest {
     string query = 1;
     int32 page_number = 2;  // Which page number do we want?

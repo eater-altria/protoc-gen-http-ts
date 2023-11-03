@@ -3,29 +3,37 @@ syntax = "proto3";
 package PackageName;
 option go_package = "github.com/group/resp/TestService";
 
-import "sub_dir/user.proto";
-
-
-
-message SearchRequest {
-    string query = 1;
-    int32 page_number = 2;  // Which page number do we want?
-    int32 result_per_page = 3;  // Number of results to return per page.
+message UserInfo {
+    int32 uid = 1;
+    int64 age = 2;
+    string name = 3;
 }
 
-message ResultItem {
-    string title = 1;
-    string url = 2;
-    string time = 3;
+message DDD {
+    int64 did = 1;
+    string dname = 2;
+    UserInfo duser = 3;
 }
 
-message SearchResponse {
-    repeated ResultItem results = 1;
-    bool isEnd = 2;
-    int32 count = 3;
+
+message GetUserInfoResp{
+    string nickName = 1;
+    string avatarUrl = 2;
+    int64  gender = 3;
+    string country = 4;
+    string province = 5;
+    string city = 6;
+    string phone = 7;
+    UserInfo user = 8;
+    repeated DDD ddlist = 9;
+    repeated string ids = 10;
 }
 
-service SearchService{
-    rpc SearchByKeyword(SearchRequest) returns (SearchResponse){}
+message GetUserInfoReq{
+    string userId = 1;
+}
+
+
+service UserService{
     rpc GetUserInfo(GetUserInfoReq) returns (GetUserInfoResp) {}
 }

@@ -185,11 +185,14 @@ func (protoMessage *ProtoMessage) GenerateImportSourceCode(
 func (protoMessage *ProtoMessage) GenerateGeneralServiceClass() []string {
 	var code = []string{
 		"export type GeneralRequest = <TReq, TResp>(cmd: string, payload: TReq, options?: any) => Promise<TResp>;",
+		"export type IFormatFn = <TResp>(res: Record<string, any>, config: Record<string, any>) => TResp;",
 		"",
 		"export class GeneralClass {",
 		"  generalRequestMethod: GeneralRequest;",
-		"  constructor(generalRequestMethod: any) {",
+		"  formatFn: IFormatFn;",
+		"  constructor(generalRequestMethod: any, formatFn: IFormatFn) {",
 		"    this.generalRequestMethod = generalRequestMethod as GeneralRequest;",
+		"    this.formatFn = formatFn as IFormatFn;",
 		"  };",
 		"};",
 		"",
@@ -208,6 +211,9 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 	for _, method := range methods {
 		var name = method.Desc.Name()
 
+		// 获取message filed 的类型对象
+		filedTypeConfig := util.GetFiledTypeConfig(method.Output.Fields, "")
+
 		// 后台需要 帕斯卡命名规则
 		transformdName, err := util.TransformNameStyle(string(name), util.PascalCase)
 
@@ -218,18 +224,21 @@ func (protoMessage *ProtoMessage) GenerateServiceClass(
 		if err != nil {
 			return make([]string, 0), err
 		}
+
 		var input = util.ConvertToUnderscore(string(method.Input.Desc.FullName()))
 		var output = util.ConvertToUnderscore(string(method.Output.Desc.FullName()))
 
 		// protoc 里面的注释
 		commentStr := util.GenerateComment(method.Comments, false, "")
+		typeVarName, filedTypeConfigStr := util.GenerateFormatObject(filedTypeConfig, transformdName)
 
 		// 增加注释
 		code = append(code, "  "+commentStr)
 		code = append(code, "  "+transformdName+"(payload: "+input+", options?: any): Promise<"+output+"> {")
+		code = append(code, "  "+filedTypeConfigStr)
 		code = append(code, "    return new Promise((resolve, reject) => {")
 		code = append(code, "      this.generalRequestMethod<"+input+", "+output+">('"+requestMethodName+"', payload, "+"options).then((res) => {")
-		code = append(code, "        resolve(res);")
+		code = append(code, "        resolve(this.formatFn(res,"+typeVarName+"));")
 		code = append(code, "      })")
 		code = append(code, "        .catch((error) => {")
 		code = append(code, "          reject(error);")

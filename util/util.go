@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"regexp"
 	"strings"
 	"syscall"
@@ -244,7 +245,7 @@ func TransformNameStyle(oldName string, targetStyle NameStyle) (string, error) {
 	return "", syscall.Errno(1)
 }
 
-// 生成 typescript 注释
+// GenerateComment 生成 typescript 注释
 func GenerateComment(methodCommentSet protogen.CommentSet, deprecated bool, prefix string) string {
 	var lines []string
 
@@ -291,4 +292,59 @@ func GenerateComment(methodCommentSet protogen.CommentSet, deprecated bool, pref
 	}
 
 	return commentStr
+}
+
+// GetFiledTypeConfig 递归遍历获取 message 所有字段的类型
+func traversalFieldType(fields []*protogen.Field, prefix string, outputMap map[string]interface{}) {
+	for _, field := range fields {
+		filedKey := prefix
+
+		// 转换成驼峰命名规范
+		camelGoName := transPascalToCamel(field.GoName)
+
+		if len(prefix) == 0 {
+			filedKey = filedKey + camelGoName
+		} else {
+			filedKey = filedKey + "." + camelGoName
+		}
+
+		if field.Desc.Kind() == protoreflect.MessageKind {
+			traversalFieldType(field.Message.Fields, filedKey, outputMap)
+		} else {
+			// 做一下约束，否则太多字段生成。
+			if field.Desc.Kind() == protoreflect.Int64Kind {
+				outputMap[filedKey] = field.Desc.Kind().String()
+			}
+		}
+	}
+}
+
+// GetFiledTypeConfig 获取 message 所有字段的类型
+func GetFiledTypeConfig(fields []*protogen.Field, prefix string) map[string]interface{} {
+	outputMap := map[string]interface{}{}
+
+	traversalFieldType(fields, prefix, outputMap)
+
+	return outputMap
+}
+
+// GenerateFormatObject 生成格式化字符串
+func GenerateFormatObject(config map[string]interface{}, varName string) (string, string) {
+	newVarName := fmt.Sprintf("%sFiled", varName)
+
+	var code = []string{
+		fmt.Sprintf("  const %s = {", newVarName),
+	}
+
+	// 遍历字段定义配置
+	for key, value := range config {
+		keyValueStr := fmt.Sprintf("\"%s\": \"%v\",", key, value)
+		code = append(code, keyValueStr)
+	}
+
+	code = append(code, "};")
+
+	codeStr := strings.Join(code, "\n      ")
+
+	return newVarName, codeStr
 }
